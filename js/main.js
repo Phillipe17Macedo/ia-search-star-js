@@ -2,12 +2,36 @@ const canvas = document.getElementById("mapCanvas");
 const ctx = canvas.getContext("2d");
 const tileSize = 20;
 
+// Definir os custos dos terrenos
+const terrenoCusto = {
+  0: 5, // Grama
+  1: 1, // Asfalto
+  2: 3, // Terra
+  3: 10, // Paralelepípedo
+  4: Infinity, // Edifícios (intransponível)
+};
+
+// Localização dos amigos (corrigido)
+const amigos = [
+  { x: 12, y: 4 }, // Exemplo corrigido para o amigo 1
+  { x: 8, y: 9 }, // Exemplo corrigido para o amigo 2
+  { x: 34, y: 5 }, // Exemplo corrigido para o amigo 3
+  { x: 37, y: 19 }, // Exemplo corrigido para o amigo 4
+  { x: 14, y: 34 }, // Exemplo corrigido para o amigo 5
+  { x: 36, y: 36 }, // Exemplo corrigido para o amigo 6
+];
+
+// Sortear quais amigos aceitarão o convite (três aleatórios)
+function sortearAmigosAceitos() {
+  let shuffledAmigos = amigos.sort(() => 0.5 - Math.random());
+  return shuffledAmigos.slice(0, 3);
+}
+
 // Função para carregar o arquivo e converter para uma matriz
 function loadGridFromFile(file) {
   return fetch(file)
     .then((response) => response.text())
     .then((data) => {
-      // Divide o conteúdo do arquivo em linhas e converte cada linha em um array de números
       return data
         .trim()
         .split("\n")
@@ -22,28 +46,36 @@ function drawMap(grid) {
       let color;
       switch (grid[y][x]) {
         case 0:
-          color = "green";
-          break; // Grama
+          color = "#84B026"; // Grama
+          break;
         case 1:
-          color = "gray";
-          break; // Asfalto
+          color = "#9B9B9B"; // Asfalto
+          break;
         case 2:
-          color = "brown";
-          break; // Terra
+          color = "#8C402E"; // Terra
+          break;
         case 3:
-          color = "lightgray";
-          break; // Paralelepípedo
+          color = "#DFEBF2"; // Paralelepípedo
+          break;
         case 4:
-          color = "orange";
-          break; // Edifícios (Obstáculo)
+          color = "#F27C38"; // Edifícios (Obstáculo)
+          break;
+        case 5:
+          color = "red"; // Amigos da Barbie (posição dos amigos)
+          break;
       }
       ctx.fillStyle = color;
       ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+
+      // Adicionar borda preta
+      ctx.strokeStyle = "#000000";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x * tileSize, y * tileSize, tileSize, tileSize);
     }
   }
 }
 
-// Função A* (igual ao seu código)
+// Função A*
 class Node {
   constructor(x, y, cost, parent = null) {
     this.x = x;
@@ -116,13 +148,13 @@ function astar(start, end, grid) {
 
     for (let neighbor of neighbors) {
       if (
-        neighbor.cost === 4 ||
+        terrenoCusto[neighbor.cost] === Infinity ||
         closedList.some((n) => n.x === neighbor.x && n.y === neighbor.y)
       ) {
         continue; // Ignorar obstáculos (edifícios) ou nós já visitados
       }
 
-      neighbor.g = currentNode.g + neighbor.cost;
+      neighbor.g = currentNode.g + terrenoCusto[neighbor.cost];
       neighbor.h = Math.abs(neighbor.x - end.x) + Math.abs(neighbor.y - end.y); // Heurística (Manhattan)
       neighbor.f = neighbor.g + neighbor.h;
 
@@ -136,21 +168,72 @@ function astar(start, end, grid) {
   return []; // Nenhum caminho encontrado
 }
 
-// Função para desenhar o caminho encontrado
-function drawPath(path) {
-  ctx.fillStyle = "pink"; // Cor da Barbie
-  for (let node of path) {
-    ctx.fillRect(node.x * tileSize, node.y * tileSize, tileSize, tileSize);
+// Função para desenhar o caminho encontrado de forma animada
+function animatePath(path, delay = 200) {
+  let totalCost = 0; // Reiniciar o custo total
+  let index = 0;
+
+  function drawStep() {
+    if (index < path.length) {
+      let node = path[index];
+
+      // Atualizar o custo
+      totalCost += node.cost;
+
+      // Desenhar o movimento da Barbie
+      ctx.fillStyle = "pink"; // Cor da Barbie
+      ctx.fillRect(node.x * tileSize, node.y * tileSize, tileSize, tileSize);
+
+      // Atualizar o custo total na interface
+      document.getElementById("custoTotal").textContent = totalCost;
+
+      // Próximo passo
+      index++;
+
+      // Continuar a animação após o intervalo
+      setTimeout(drawStep, delay);
+    }
   }
+
+  // Iniciar a animação
+  drawStep();
 }
 
-loadGridFromFile("../js/map.txt").then((grid) => {
+// Executa o algoritmo, visitando os amigos e retornando para a casa
+loadGridFromFile("js/map.txt").then((grid) => {
   drawMap(grid);
 
-  // Inicializar a busca
-  let startNode = new Node(19, 23, grid[19][23]); // Casa da Barbie (posição inicial)
-  let endNode = new Node(0, 0, grid[0][0]); // Exemplo de destino (um amigo)
-  let path = astar(startNode, endNode, grid); // Calcula o caminho usando A*
+  // Definir os amigos que aceitarão o convite
+  const amigosAceitos = sortearAmigosAceitos();
 
-  drawPath(path); // Desenhar o caminho no mapa
+  // Inicializar a busca a partir da casa da Barbie
+  let startNode = new Node(18, 22, grid[18][22]); // Casa da Barbie (ponto inicial)
+
+  // Função para visitar os amigos sequencialmente
+  function visitarAmigos(i = 0) {
+    if (i < amigosAceitos.length) {
+      let amigo = amigosAceitos[i];
+      let endNode = new Node(amigo.x, amigo.y, grid[amigo.y][amigo.x]);
+      let path = astar(startNode, endNode, grid); // Calcula o caminho usando A*
+
+      // Animar o caminho até o amigo
+      animatePath(path, 200); // 200ms de atraso entre cada movimento
+
+      // Após a animação, continuar com o próximo amigo
+      setTimeout(() => {
+        startNode = endNode; // Continuar a partir do último amigo visitado
+        visitarAmigos(i + 1); // Próximo amigo
+      }, path.length * 200); // Espera o tempo da animação
+    } else {
+      // Voltar para a casa da Barbie após visitar todos os amigos
+      let returnHome = new Node(18, 22, grid[18][22]);
+      let path = astar(startNode, returnHome, grid); // Caminho de volta
+
+      // Animar o caminho de volta para casa
+      animatePath(path, 200);
+    }
+  }
+
+  // Começar a visita aos amigos
+  visitarAmigos();
 });
