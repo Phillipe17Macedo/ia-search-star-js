@@ -4,6 +4,10 @@ const tileSize = 20;
 
 const barbieImg = document.getElementById("barbieImage");
 
+// Adicionar sons
+const encontrarAmigoSound = document.getElementById("encontrarAmigoSound");
+const voltarParaCasaSound = document.getElementById("voltarParaCasaSound");
+
 const terrenoCusto = {
   0: 5, // Grama
   1: 1, // Asfalto
@@ -209,6 +213,12 @@ function animatePath(path, delay = 200, amigo = null, returning = false) {
         const listItem = document.createElement("li");
         listItem.textContent = `${amigo.nome}: Custo ${totalCost}`;
         costList.appendChild(listItem);
+
+        // Tocar som ao encontrar o amigo
+        encontrarAmigoSound.play();
+      } else if (returning) {
+        // Tocar som ao retornar para casa
+        voltarParaCasaSound.play();
       }
     }
   }
