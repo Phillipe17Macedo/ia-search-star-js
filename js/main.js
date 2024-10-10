@@ -2,10 +2,8 @@ const canvas = document.getElementById("mapCanvas");
 const ctx = canvas.getContext("2d");
 const tileSize = 20;
 
-// Carregar a imagem da Barbie
 const barbieImg = document.getElementById("barbieImage");
 
-// Definir os custos dos terrenos
 const terrenoCusto = {
   0: 5, // Grama
   1: 1, // Asfalto
@@ -14,23 +12,23 @@ const terrenoCusto = {
   4: Infinity, // Edifícios (intransponível)
 };
 
+let gridState = []; // Variável para armazenar o estado original do grid (as cores)
+
 // Localização dos amigos (corrigido)
 const amigos = [
   { x: 12, y: 4, nome: "Amigo 1" },
   { x: 8, y: 9, nome: "Amigo 2" },
   { x: 34, y: 5, nome: "Amigo 3" },
-  { x: 37, y: 19, nome: "Amigo 4" },
-  { x: 14, y: 34, nome: "Amigo 5" },
+  { x: 37, y: 23, nome: "Amigo 4" },
+  { x: 14, y: 35, nome: "Amigo 5" },
   { x: 36, y: 36, nome: "Amigo 6" },
 ];
 
-// Sortear quais amigos aceitarão o convite (três aleatórios)
 function sortearAmigosAceitos() {
   let shuffledAmigos = amigos.sort(() => 0.5 - Math.random());
   return shuffledAmigos.slice(0, 3);
 }
 
-// Função para carregar o arquivo e converter para uma matriz
 function loadGridFromFile(file) {
   return fetch(file)
     .then((response) => response.text())
@@ -42,52 +40,53 @@ function loadGridFromFile(file) {
     });
 }
 
-// Função para desenhar o mapa
 function drawMap(grid) {
   for (let y = 0; y < grid.length; y++) {
     for (let x = 0; x < grid[y].length; x++) {
       let color;
       switch (grid[y][x]) {
         case 0:
-          color = "#84B026"; // Grama
+          color = "#84B026";
           break;
         case 1:
-          color = "#9B9B9B"; // Asfalto
+          color = "#9B9B9B";
           break;
         case 2:
-          color = "#8C402E"; // Terra
+          color = "#8C402E";
           break;
         case 3:
-          color = "#DFEBF2"; // Paralelepípedo
+          color = "#DFEBF2";
           break;
         case 4:
-          color = "#F27C38"; // Edifícios (Obstáculo)
+          color = "#F27C38";
           break;
         case 5:
-          color = "red"; // Amigos da Barbie (posição dos amigos)
+          color = "#079DD9";
           break;
       }
       ctx.fillStyle = color;
       ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-
-      // Adicionar borda preta
-      ctx.strokeStyle = "#000000";
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = "#000";
       ctx.strokeRect(x * tileSize, y * tileSize, tileSize, tileSize);
+
+      // Salvar o estado inicial da célula (cor original)
+      if (!gridState[y]) {
+        gridState[y] = [];
+      }
+      gridState[y][x] = color;
     }
   }
 }
 
-// Função A*
 class Node {
   constructor(x, y, cost, parent = null) {
     this.x = x;
     this.y = y;
     this.cost = cost;
     this.parent = parent;
-    this.g = 0; // Custo real
-    this.h = 0; // Heurística
-    this.f = 0; // Custo total (g + h)
+    this.g = 0;
+    this.h = 0;
+    this.f = 0;
   }
 }
 
@@ -154,11 +153,11 @@ function astar(start, end, grid) {
         terrenoCusto[neighbor.cost] === Infinity ||
         closedList.some((n) => n.x === neighbor.x && n.y === neighbor.y)
       ) {
-        continue; // Ignorar obstáculos (edifícios) ou nós já visitados
+        continue;
       }
 
       neighbor.g = currentNode.g + terrenoCusto[neighbor.cost];
-      neighbor.h = Math.abs(neighbor.x - end.x) + Math.abs(neighbor.y - end.y); // Heurística (Manhattan)
+      neighbor.h = Math.abs(neighbor.x - end.x) + Math.abs(neighbor.y - end.y);
       neighbor.f = neighbor.g + neighbor.h;
 
       if (!openList.some((n) => n.x === neighbor.x && n.y === neighbor.y)) {
@@ -171,24 +170,43 @@ function astar(start, end, grid) {
   return []; // Nenhum caminho encontrado
 }
 
-// Função para desenhar o caminho encontrado de forma animada
-function animatePath(path, delay = 200) {
-  let totalCost = 0; // Reiniciar o custo total
+function encontrarAmigoMaisProximo(atualNode, amigosRestantes) {
+  let amigoMaisProximo = null;
+  let menorDistancia = Infinity;
+
+  amigosRestantes.forEach((amigo) => {
+    const distancia =
+      Math.abs(amigo.x - atualNode.x) + Math.abs(amigo.y - atualNode.y);
+    if (distancia < menorDistancia) {
+      menorDistancia = distancia;
+      amigoMaisProximo = amigo;
+    }
+  });
+
+  return amigoMaisProximo;
+}
+
+function animatePath(path, delay = 200, amigo = null, returning = false) {
+  let totalCost = 0;
   let index = 0;
+  const costList = document.getElementById("costList");
 
   function drawStep() {
     if (index < path.length) {
       let node = path[index];
 
-      // Atualizar o custo
       totalCost += node.cost;
 
-      // Desenhar o trajeto percorrido
-      ctx.fillStyle = "lightpink"; // Cor do rastro da Barbie
+      // Se está voltando, restaurar a cor original
+      if (returning) {
+        ctx.fillStyle = gridState[node.y][node.x];
+      } else {
+        ctx.fillStyle = "lightpink";
+      }
+
       ctx.fillRect(node.x * tileSize, node.y * tileSize, tileSize, tileSize);
       ctx.strokeRect(node.x * tileSize, node.y * tileSize, tileSize, tileSize);
 
-      // Desenhar a Barbie na nova posição
       ctx.drawImage(
         barbieImg,
         node.x * tileSize,
@@ -197,72 +215,87 @@ function animatePath(path, delay = 200) {
         tileSize
       );
 
-      // Atualizar o custo total na interface
       document.getElementById("custoTotal").textContent = totalCost;
 
-      // Próximo passo
       index++;
 
-      // Continuar a animação após o intervalo
       setTimeout(drawStep, delay);
+    } else {
+      if (amigo) {
+        const listItem = document.createElement("li");
+        listItem.textContent = `${amigo.nome}: Custo ${totalCost}`;
+        costList.appendChild(listItem);
+      }
     }
   }
 
-  // Iniciar a animação
   drawStep();
 }
 
 function tentarConvencerAmigo(amigo) {
-  // Probabilidade de o amigo aceitar o convite (50%)
   return Math.random() > 0.5;
 }
 
-// Executa o algoritmo, visitando os amigos e retornando para a casa
 loadGridFromFile("js/map.txt").then((grid) => {
   drawMap(grid);
 
-  // Definir os amigos que aceitarão o convite
   const amigosAceitos = sortearAmigosAceitos();
 
-  // Mostrar os amigos sorteados
   document.getElementById("amigosSorteados").textContent = amigosAceitos
     .map((amigo) => amigo.nome)
     .join(", ");
 
-  // Inicializar a busca a partir da casa da Barbie
   let startNode = new Node(18, 22, grid[18][22]); // Casa da Barbie (ponto inicial)
   let amigosEncontrados = [];
 
-  // Função para visitar os amigos sequencialmente
-  function visitarAmigos(i = 0) {
-    if (i < amigosAceitos.length) {
-      let amigo = amigosAceitos[i];
-      let endNode = new Node(amigo.x, amigo.y, grid[amigo.y][amigo.x]);
-      let path = astar(startNode, endNode, grid); // Calcula o caminho usando A*
+  amigosAceitos.forEach((amigo, index) => {
+    if (amigo.x === startNode.x && amigo.y === startNode.y) {
+      amigosEncontrados.push(amigo.nome);
+      amigosAceitos.splice(index, 1);
+    }
+  });
 
-      // Animar o caminho até o amigo
-      animatePath(path, 200); // 200ms de atraso entre cada movimento
+  document.getElementById("amigosEncontrados").textContent =
+    amigosEncontrados.join(", ");
 
-      // Após a animação, continuar com o próximo amigo
+  function visitarAmigos(atualNode, amigosRestantes) {
+    if (amigosRestantes.length > 0) {
+      const amigoMaisProximo = encontrarAmigoMaisProximo(
+        atualNode,
+        amigosRestantes
+      );
+      let endNode = new Node(
+        amigoMaisProximo.x,
+        amigoMaisProximo.y,
+        grid[amigoMaisProximo.y][amigoMaisProximo.x]
+      );
+      let path = astar(atualNode, endNode, grid);
+
+      animatePath(path, 200, amigoMaisProximo);
+
       setTimeout(() => {
-        // Adicionar o amigo encontrado na lista
-        amigosEncontrados.push(amigo.nome);
+        amigosEncontrados.push(amigoMaisProximo.nome);
         document.getElementById("amigosEncontrados").textContent =
           amigosEncontrados.join(", ");
 
-        startNode = endNode; // Continuar a partir do último amigo visitado
-        visitarAmigos(i + 1); // Próximo amigo
-      }, path.length * 200); // Espera o tempo da animação
-    } else {
-      // Voltar para a casa da Barbie após visitar todos os amigos
-      let returnHome = new Node(18, 22, grid[18][22]);
-      let path = astar(startNode, returnHome, grid); // Caminho de volta
+        amigosRestantes = amigosRestantes.filter(
+          (amigo) => amigo !== amigoMaisProximo
+        );
 
-      // Animar o caminho de volta para casa
-      animatePath(path, 200);
+        visitarAmigos(endNode, amigosRestantes);
+      }, path.length * 200);
+    } else {
+      let returnHome = new Node(18, 22, grid[18][22]);
+      let path = astar(atualNode, returnHome, grid);
+
+      animatePath(path, 200, null, true);
+      setTimeout(() => {
+        const finalCost = document.getElementById("finalCost");
+        finalCost.textContent =
+          document.getElementById("custoTotal").textContent;
+      }, path.length * 200);
     }
   }
 
-  // Começar a visita aos amigos
-  visitarAmigos();
+  visitarAmigos(startNode, amigosAceitos);
 });
