@@ -1,0 +1,7 @@
+Posição Barbie Inicial: x:18, y 22
+amigo 1: x:12, y:4
+amigo 2: x:8 , y:9
+amigo 3: x:34 , y:5
+amigo 4: x:37 , y:23
+amigo 5: x:14 , y:35
+amigo 6: x:36 , y:36
