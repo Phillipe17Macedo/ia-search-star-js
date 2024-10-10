@@ -2,6 +2,9 @@ const canvas = document.getElementById("mapCanvas");
 const ctx = canvas.getContext("2d");
 const tileSize = 20;
 
+// Carregar a imagem da Barbie
+const barbieImg = document.getElementById("barbieImage");
+
 // Definir os custos dos terrenos
 const terrenoCusto = {
   0: 5, // Grama
@@ -13,12 +16,12 @@ const terrenoCusto = {
 
 // Localização dos amigos (corrigido)
 const amigos = [
-  { x: 12, y: 4 }, // Exemplo corrigido para o amigo 1
-  { x: 8, y: 9 }, // Exemplo corrigido para o amigo 2
-  { x: 34, y: 5 }, // Exemplo corrigido para o amigo 3
-  { x: 37, y: 19 }, // Exemplo corrigido para o amigo 4
-  { x: 14, y: 34 }, // Exemplo corrigido para o amigo 5
-  { x: 36, y: 36 }, // Exemplo corrigido para o amigo 6
+  { x: 12, y: 4, nome: "Amigo 1" },
+  { x: 8, y: 9, nome: "Amigo 2" },
+  { x: 34, y: 5, nome: "Amigo 3" },
+  { x: 37, y: 19, nome: "Amigo 4" },
+  { x: 14, y: 34, nome: "Amigo 5" },
+  { x: 36, y: 36, nome: "Amigo 6" },
 ];
 
 // Sortear quais amigos aceitarão o convite (três aleatórios)
@@ -180,9 +183,19 @@ function animatePath(path, delay = 200) {
       // Atualizar o custo
       totalCost += node.cost;
 
-      // Desenhar o movimento da Barbie
-      ctx.fillStyle = "pink"; // Cor da Barbie
+      // Desenhar o trajeto percorrido
+      ctx.fillStyle = "lightpink"; // Cor do rastro da Barbie
       ctx.fillRect(node.x * tileSize, node.y * tileSize, tileSize, tileSize);
+      ctx.strokeRect(node.x * tileSize, node.y * tileSize, tileSize, tileSize);
+
+      // Desenhar a Barbie na nova posição
+      ctx.drawImage(
+        barbieImg,
+        node.x * tileSize,
+        node.y * tileSize,
+        tileSize,
+        tileSize
+      );
 
       // Atualizar o custo total na interface
       document.getElementById("custoTotal").textContent = totalCost;
@@ -199,6 +212,11 @@ function animatePath(path, delay = 200) {
   drawStep();
 }
 
+function tentarConvencerAmigo(amigo) {
+  // Probabilidade de o amigo aceitar o convite (50%)
+  return Math.random() > 0.5;
+}
+
 // Executa o algoritmo, visitando os amigos e retornando para a casa
 loadGridFromFile("js/map.txt").then((grid) => {
   drawMap(grid);
@@ -206,8 +224,14 @@ loadGridFromFile("js/map.txt").then((grid) => {
   // Definir os amigos que aceitarão o convite
   const amigosAceitos = sortearAmigosAceitos();
 
+  // Mostrar os amigos sorteados
+  document.getElementById("amigosSorteados").textContent = amigosAceitos
+    .map((amigo) => amigo.nome)
+    .join(", ");
+
   // Inicializar a busca a partir da casa da Barbie
   let startNode = new Node(18, 22, grid[18][22]); // Casa da Barbie (ponto inicial)
+  let amigosEncontrados = [];
 
   // Função para visitar os amigos sequencialmente
   function visitarAmigos(i = 0) {
@@ -221,6 +245,11 @@ loadGridFromFile("js/map.txt").then((grid) => {
 
       // Após a animação, continuar com o próximo amigo
       setTimeout(() => {
+        // Adicionar o amigo encontrado na lista
+        amigosEncontrados.push(amigo.nome);
+        document.getElementById("amigosEncontrados").textContent =
+          amigosEncontrados.join(", ");
+
         startNode = endNode; // Continuar a partir do último amigo visitado
         visitarAmigos(i + 1); // Próximo amigo
       }, path.length * 200); // Espera o tempo da animação
