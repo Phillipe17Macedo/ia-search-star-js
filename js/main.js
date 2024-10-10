@@ -2,7 +2,12 @@ const canvas = document.getElementById("mapCanvas");
 const ctx = canvas.getContext("2d");
 const tileSize = 20;
 
+//icone Barbie
 const barbieImg = document.getElementById("barbieImage");
+
+// Adicionar sons
+const encontrarAmigoSound = document.getElementById("encontrarAmigoSound");
+const voltarParaCasaSound = document.getElementById("voltarParaCasaSound");
 
 const terrenoCusto = {
   0: 5, // Grama
@@ -61,7 +66,7 @@ function drawMap(grid) {
           color = "#F27C38";
           break;
         case 5:
-          color = "#079DD9";
+          color = "red";
           break;
       }
       ctx.fillStyle = color;
@@ -170,22 +175,6 @@ function astar(start, end, grid) {
   return []; // Nenhum caminho encontrado
 }
 
-function encontrarAmigoMaisProximo(atualNode, amigosRestantes) {
-  let amigoMaisProximo = null;
-  let menorDistancia = Infinity;
-
-  amigosRestantes.forEach((amigo) => {
-    const distancia =
-      Math.abs(amigo.x - atualNode.x) + Math.abs(amigo.y - atualNode.y);
-    if (distancia < menorDistancia) {
-      menorDistancia = distancia;
-      amigoMaisProximo = amigo;
-    }
-  });
-
-  return amigoMaisProximo;
-}
-
 function animatePath(path, delay = 200, amigo = null, returning = false) {
   let totalCost = 0;
   let index = 0;
@@ -225,6 +214,12 @@ function animatePath(path, delay = 200, amigo = null, returning = false) {
         const listItem = document.createElement("li");
         listItem.textContent = `${amigo.nome}: Custo ${totalCost}`;
         costList.appendChild(listItem);
+
+        // Tocar som ao encontrar o amigo
+        encontrarAmigoSound.play();
+      } else if (returning) {
+        // Tocar som ao retornar para casa
+        voltarParaCasaSound.play();
       }
     }
   }
@@ -258,36 +253,27 @@ loadGridFromFile("js/map.txt").then((grid) => {
   document.getElementById("amigosEncontrados").textContent =
     amigosEncontrados.join(", ");
 
-  function visitarAmigos(atualNode, amigosRestantes) {
-    if (amigosRestantes.length > 0) {
-      const amigoMaisProximo = encontrarAmigoMaisProximo(
-        atualNode,
-        amigosRestantes
-      );
-      let endNode = new Node(
-        amigoMaisProximo.x,
-        amigoMaisProximo.y,
-        grid[amigoMaisProximo.y][amigoMaisProximo.x]
-      );
-      let path = astar(atualNode, endNode, grid);
+  function visitarAmigos(i = 0) {
+    if (i < amigosAceitos.length) {
+      let amigo = amigosAceitos[i];
+      let endNode = new Node(amigo.x, amigo.y, grid[amigo.y][amigo.x]);
+      let path = astar(startNode, endNode, grid);
 
-      animatePath(path, 200, amigoMaisProximo);
+      animatePath(path, 200, amigo);
 
       setTimeout(() => {
-        amigosEncontrados.push(amigoMaisProximo.nome);
+        amigosEncontrados.push(amigo.nome);
         document.getElementById("amigosEncontrados").textContent =
           amigosEncontrados.join(", ");
 
-        amigosRestantes = amigosRestantes.filter(
-          (amigo) => amigo !== amigoMaisProximo
-        );
-
-        visitarAmigos(endNode, amigosRestantes);
+        startNode = endNode;
+        visitarAmigos(i + 1);
       }, path.length * 200);
     } else {
       let returnHome = new Node(18, 22, grid[18][22]);
-      let path = astar(atualNode, returnHome, grid);
+      let path = astar(startNode, returnHome, grid);
 
+      // Animar a volta restaurando as cores originais
       animatePath(path, 200, null, true);
       setTimeout(() => {
         const finalCost = document.getElementById("finalCost");
@@ -297,5 +283,5 @@ loadGridFromFile("js/map.txt").then((grid) => {
     }
   }
 
-  visitarAmigos(startNode, amigosAceitos);
+  visitarAmigos();
 });
