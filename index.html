@@ -13,17 +13,32 @@
         <canvas id="mapCanvas" width="840" height="840"></canvas>
       </div>
       <div class="right-panel">
-        <p>Custo total acumulado: <span id="custoTotal">0</span></p>
-        <p>
-          Amigos sorteados:
-          <span id="amigosSorteados">Nenhum sorteado ainda</span>
-        </p>
-        <p>
-          Amigos encontrados:
-          <span id="amigosEncontrados">Nenhum encontrado ainda</span>
-        </p>
+        <div class="info-box">
+          <h2>Estatísticas da Partida</h2>
+          <p>Custo total acumulado: <span id="custoTotal">0</span></p>
+          <p>
+            Amigos sorteados:
+            <span id="amigosSorteados">Nenhum sorteado ainda</span>
+          </p>
+          <p>
+            Amigos encontrados:
+            <span id="amigosEncontrados">Nenhum encontrado ainda</span>
+          </p>
+        </div>
+        <div class="cost-details">
+          <h3>Custos Detalhados</h3>
+          <ul id="costList">
+            <li>Nenhum custo registrado ainda</li>
+          </ul>
+        </div>
+        <div class="final-cost">
+          <h3>Custo Total Final:</h3>
+          <p id="finalCost">Aguardando finalização</p>
+        </div>
       </div>
     </div>
+    <audio id="encontrarAmigoSound" src="encontrar-amigo.mp3"></audio>
+    <audio id="voltarParaCasaSound" src="voltar-casa.mp3"></audio>
     <img id="barbieImage" src="barbie.png" alt="Barbie" style="display: none" />
     <script src="js/main.js"></script>
   </body>
