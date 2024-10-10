@@ -8,8 +8,23 @@
   </head>
   <body>
     <h1>Mundo da Barbie - Algoritmo A*</h1>
-    <canvas id="mapCanvas" width="840" height="840"></canvas>
-    <p>Custo total acumulado: <span id="custoTotal">0</span></p>
+    <div class="container">
+      <div class="left-panel">
+        <canvas id="mapCanvas" width="840" height="840"></canvas>
+      </div>
+      <div class="right-panel">
+        <p>Custo total acumulado: <span id="custoTotal">0</span></p>
+        <p>
+          Amigos sorteados:
+          <span id="amigosSorteados">Nenhum sorteado ainda</span>
+        </p>
+        <p>
+          Amigos encontrados:
+          <span id="amigosEncontrados">Nenhum encontrado ainda</span>
+        </p>
+      </div>
+    </div>
+    <img id="barbieImage" src="barbie.png" alt="Barbie" style="display: none" />
     <script src="js/main.js"></script>
   </body>
 </html>
