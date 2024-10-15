@@ -29,6 +29,67 @@ const amigos = [
   { x: 36, y: 36, nome: "Amigo 6" },
 ];
 
+class MinHeap {
+  constructor() {
+    this.heap = [];
+  }
+
+  insert(node) {
+    this.heap.push(node);
+    this.bubbleUp();
+  }
+
+  bubbleUp() {
+    let index = this.heap.length - 1;
+    while (index > 0) {
+      let parentIndex = Math.floor((index - 1) / 2);
+      if (this.heap[index].f >= this.heap[parentIndex].f) break;
+      [this.heap[index], this.heap[parentIndex]] = [
+        this.heap[parentIndex],
+        this.heap[index],
+      ];
+      index = parentIndex;
+    }
+  }
+
+  extractMin() {
+    if (this.heap.length === 1) return this.heap.pop();
+    const min = this.heap[0];
+    this.heap[0] = this.heap.pop();
+    this.bubbleDown(0);
+    return min;
+  }
+
+  bubbleDown(index) {
+    let smallest = index;
+    const left = 2 * index + 1;
+    const right = 2 * index + 2;
+
+    if (left < this.heap.length && this.heap[left].f < this.heap[smallest].f) {
+      smallest = left;
+    }
+
+    if (
+      right < this.heap.length &&
+      this.heap[right].f < this.heap[smallest].f
+    ) {
+      smallest = right;
+    }
+
+    if (smallest !== index) {
+      [this.heap[index], this.heap[smallest]] = [
+        this.heap[smallest],
+        this.heap[index],
+      ];
+      this.bubbleDown(smallest);
+    }
+  }
+
+  size() {
+    return this.heap.length;
+  }
+}
+
 function sortearAmigosAceitos() {
   let shuffledAmigos = amigos.sort(() => 0.5 - Math.random());
   return shuffledAmigos.slice(0, 3);
@@ -66,7 +127,7 @@ function drawMap(grid) {
           color = "#F27C38";
           break;
         case 5:
-          color = "red";
+          color = "#011640";
           break;
       }
       ctx.fillStyle = color;
@@ -96,15 +157,13 @@ class Node {
 }
 
 function astar(start, end, grid) {
-  let openList = [];
-  let closedList = [];
+  let openList = new MinHeap();
+  let closedSet = new Set();
 
-  openList.push(start);
+  openList.insert(start);
 
-  while (openList.length > 0) {
-    let currentNode = openList.reduce((prev, curr) =>
-      prev.f < curr.f ? prev : curr
-    );
+  while (openList.size() > 0) {
+    let currentNode = openList.extractMin();
 
     if (currentNode.x === end.x && currentNode.y === end.y) {
       let path = [];
@@ -116,8 +175,7 @@ function astar(start, end, grid) {
       return path.reverse();
     }
 
-    openList = openList.filter((node) => node !== currentNode);
-    closedList.push(currentNode);
+    closedSet.add(`${currentNode.x}-${currentNode.y}`);
 
     let neighbors = [];
     if (currentNode.x + 1 < 42)
@@ -156,7 +214,7 @@ function astar(start, end, grid) {
     for (let neighbor of neighbors) {
       if (
         terrenoCusto[neighbor.cost] === Infinity ||
-        closedList.some((n) => n.x === neighbor.x && n.y === neighbor.y)
+        closedSet.has(`${neighbor.x}-${neighbor.y}`)
       ) {
         continue;
       }
@@ -165,9 +223,13 @@ function astar(start, end, grid) {
       neighbor.h = Math.abs(neighbor.x - end.x) + Math.abs(neighbor.y - end.y);
       neighbor.f = neighbor.g + neighbor.h;
 
-      if (!openList.some((n) => n.x === neighbor.x && n.y === neighbor.y)) {
+      if (
+        ![...openList.heap].some(
+          (n) => n.x === neighbor.x && n.y === neighbor.y
+        )
+      ) {
         neighbor.parent = currentNode;
-        openList.push(neighbor);
+        openList.insert(neighbor);
       }
     }
   }
@@ -186,7 +248,6 @@ function animatePath(path, delay = 200, amigo = null, returning = false) {
 
       totalCost += node.cost;
 
-      // Se está voltando, restaurar a cor original
       if (returning) {
         ctx.fillStyle = gridState[node.y][node.x];
       } else {
@@ -214,11 +275,8 @@ function animatePath(path, delay = 200, amigo = null, returning = false) {
         const listItem = document.createElement("li");
         listItem.textContent = `${amigo.nome}: Custo ${totalCost}`;
         costList.appendChild(listItem);
-
-        // Tocar som ao encontrar o amigo
         encontrarAmigoSound.play();
       } else if (returning) {
-        // Tocar som ao retornar para casa
         voltarParaCasaSound.play();
       }
     }
