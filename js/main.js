@@ -289,57 +289,89 @@ function tentarConvencerAmigo(amigo) {
   return Math.random() > 0.5;
 }
 
-loadGridFromFile("js/map.txt").then((grid) => {
-  drawMap(grid);
+loadGridFromFile("js/map.txt")
+  .then((grid) => {
+    console.log("Mapa carregado com sucesso");
+    drawMap(grid);
 
-  const amigosAceitos = sortearAmigosAceitos();
+    let startNode = new Node(18, 22, grid[18][22]); // Casa da Barbie (ponto inicial)
 
-  document.getElementById("amigosSorteados").textContent = amigosAceitos
-    .map((amigo) => amigo.nome)
-    .join(", ");
+    // Determinar a ordem dos amigos usando uma heurística mais rápida
+    let ordemOtima = calcularOrdemHeuristica(amigos, startNode);
 
-  let startNode = new Node(18, 22, grid[18][22]); // Casa da Barbie (ponto inicial)
-  let amigosEncontrados = [];
+    let amigosEncontrados = [];
 
-  amigosAceitos.forEach((amigo, index) => {
-    if (amigo.x === startNode.x && amigo.y === startNode.y) {
-      amigosEncontrados.push(amigo.nome);
-      amigosAceitos.splice(index, 1);
+    function visitarAmigos(i = 0) {
+      if (i < ordemOtima.length) {
+        let amigo = ordemOtima[i];
+        let endNode = new Node(amigo.x, amigo.y, grid[amigo.y][amigo.x]);
+        let path = astar(startNode, endNode, grid);
+
+        if (path.length === 0) {
+          console.error("Nenhum caminho encontrado para:", amigo.nome);
+          return;
+        }
+
+        animatePath(path, 100, amigo); // Reduzindo o delay para 100ms
+
+        setTimeout(() => {
+          amigosEncontrados.push(amigo.nome);
+          document.getElementById("amigosEncontrados").textContent =
+            amigosEncontrados.join(", ");
+
+          startNode = endNode;
+          visitarAmigos(i + 1);
+        }, path.length * 100); // Ajustado para garantir que a Barbie chegue ao amigo antes de continuar
+      } else {
+        let returnHome = new Node(18, 22, grid[18][22]);
+        let path = astar(startNode, returnHome, grid);
+
+        if (path.length === 0) {
+          console.error("Nenhum caminho encontrado de volta para casa");
+          return;
+        }
+
+        animatePath(path, 200, null, true);
+        setTimeout(() => {
+          const finalCost = document.getElementById("finalCost");
+          finalCost.textContent =
+            document.getElementById("custoTotal").textContent;
+        }, path.length * 100);
+      }
     }
+
+    visitarAmigos();
+  })
+  .catch((error) => {
+    console.error("Erro ao carregar o mapa:", error);
   });
 
-  document.getElementById("amigosEncontrados").textContent =
-    amigosEncontrados.join(", ");
+function calcularOrdemHeuristica(amigos, startNode) {
+  let ordem = [];
+  let naoVisitados = [...amigos];
+  let atual = startNode;
 
-  function visitarAmigos(i = 0) {
-    if (i < amigosAceitos.length) {
-      let amigo = amigosAceitos[i];
-      let endNode = new Node(amigo.x, amigo.y, grid[amigo.y][amigo.x]);
-      let path = astar(startNode, endNode, grid);
+  while (naoVisitados.length > 0) {
+    let menorDistancia = Infinity;
+    let proximoAmigo = null;
+    let proximoIndex = -1;
 
-      animatePath(path, 200, amigo);
+    // Calcular a distância de cada amigo não visitado usando a distância Manhattan
+    naoVisitados.forEach((amigo, index) => {
+      let distancia = Math.abs(amigo.x - atual.x) + Math.abs(amigo.y - atual.y);
+      if (distancia < menorDistancia) {
+        menorDistancia = distancia;
+        proximoAmigo = amigo;
+        proximoIndex = index;
+      }
+    });
 
-      setTimeout(() => {
-        amigosEncontrados.push(amigo.nome);
-        document.getElementById("amigosEncontrados").textContent =
-          amigosEncontrados.join(", ");
-
-        startNode = endNode;
-        visitarAmigos(i + 1);
-      }, path.length * 200);
-    } else {
-      let returnHome = new Node(18, 22, grid[18][22]);
-      let path = astar(startNode, returnHome, grid);
-
-      // Animar a volta restaurando as cores originais
-      animatePath(path, 200, null, true);
-      setTimeout(() => {
-        const finalCost = document.getElementById("finalCost");
-        finalCost.textContent =
-          document.getElementById("custoTotal").textContent;
-      }, path.length * 200);
+    if (proximoAmigo) {
+      ordem.push(proximoAmigo);
+      naoVisitados.splice(proximoIndex, 1);
+      atual = new Node(proximoAmigo.x, proximoAmigo.y, 0);
     }
   }
 
-  visitarAmigos();
-});
+  return ordem;
+}
