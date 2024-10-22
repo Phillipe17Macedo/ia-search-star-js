@@ -127,7 +127,7 @@ function drawMap(grid) {
           color = "#DFEBF2"; // Paralelepípedo
           break;
         case 4:
-          color = "#FF0000"; // Edifícios (vermelho para destaque)
+          color = "#F26938"; // Edifícios (vermelho para destaque)
           break;
         case 5:
           color = "#011640"; // Outro tipo de terreno, se necessário
