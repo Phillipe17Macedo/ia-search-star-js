@@ -352,33 +352,9 @@ loadGridFromFile("js/map.txt")
 
     let amigosEncontrados = [];
 
-    function visitarAmigos(i = 0) {
-      if (i < ordemOtima.length) {
-        let amigo = ordemOtima[i];
-        let endNode = new Node(amigo.x, amigo.y, grid[amigo.y][amigo.x]);
-        let path = astar(startNode, endNode, grid);
-
-        if (path.length === 0) {
-          console.error("Nenhum caminho encontrado para:", amigo.nome);
-          return;
-        }
-
-        animatePath(path, 100, amigo); // Reduzindo o delay para 100ms
-
-        setTimeout(() => {
-          if (tentarConvencerAmigo(amigo)) {
-            amigosEncontrados.push(amigo.nome);
-            document.getElementById("amigosEncontrados").textContent =
-              amigosEncontrados.join(", ");
-            console.log(`Convencido: ${amigo.nome}`);
-          } else {
-            console.log(`Recusado: ${amigo.nome}`);
-          }
-
-          startNode = endNode; // Atualiza a posição da Barbie para o amigo atual
-          visitarAmigos(i + 1);
-        }, path.length * 100); // Ajustado para garantir que a Barbie chegue ao amigo antes de continuar
-      } else {
+    function visitarAmigos(i = 0, amigosConvencidos = 0) {
+      if (amigosConvencidos >= 3) {
+        // Se já convenceu 3 amigos, voltar para casa
         let returnHome = new Node(18, 22, grid[22][18]);
         let path = astar(startNode, returnHome, grid);
 
@@ -393,6 +369,50 @@ loadGridFromFile("js/map.txt")
           finalCost.textContent =
             document.getElementById("custoTotal").textContent;
           console.log("Retornou para casa");
+        }, path.length * 200);
+      } else if (i < amigos.length) {
+        // Continua visitando os amigos
+        let amigo = amigos[i]; // Percorre todos os amigos
+        let endNode = new Node(amigo.x, amigo.y, grid[amigo.y][amigo.x]);
+        let path = astar(startNode, endNode, grid);
+
+        if (path.length === 0) {
+          console.error("Nenhum caminho encontrado para:", amigo.nome);
+          return;
+        }
+
+        animatePath(path, 100, amigo); // Reduzindo o delay para 100ms
+
+        setTimeout(() => {
+          if (amigosAceitos.includes(amigo)) {
+            amigosEncontrados.push(amigo.nome);
+            amigosConvencidos++;
+            document.getElementById("amigosEncontrados").textContent =
+              amigosEncontrados.join(", ");
+            console.log(`Convencido: ${amigo.nome}`);
+          } else {
+            console.log(`Recusado: ${amigo.nome}`);
+          }
+
+          startNode = endNode; // Atualiza a posição da Barbie para o amigo atual
+          visitarAmigos(i + 1, amigosConvencidos); // Continua visitando o próximo amigo
+        }, path.length * 100); // Ajustado para garantir que a Barbie chegue ao amigo antes de continuar
+      } else {
+        // Caso tenha percorrido todos os amigos sem convencer 3, ainda assim retorna para casa
+        let returnHome = new Node(18, 22, grid[22][18]);
+        let path = astar(startNode, returnHome, grid);
+
+        if (path.length === 0) {
+          console.error("Nenhum caminho encontrado de volta para casa");
+          return;
+        }
+
+        animatePath(path, 200, null, true);
+        setTimeout(() => {
+          const finalCost = document.getElementById("finalCost");
+          finalCost.textContent =
+            document.getElementById("custoTotal").textContent;
+          console.log("Retornou para casa após visitar todos os amigos");
         }, path.length * 200);
       }
     }
