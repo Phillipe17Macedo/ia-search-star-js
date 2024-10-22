@@ -1,18 +1,22 @@
+/* Fontes aprimoradas */
 body {
   font-family: "Roboto", sans-serif;
-  background-color: #f7f7f7;
+  background: linear-gradient(135deg, #fdf2f8, #ffe4e1);
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
+  overflow-x: hidden;
 }
 
 h1 {
   margin: 30px 0;
   color: #ff69b4;
-  font-size: 2.2em;
-  letter-spacing: 1px;
+  font-size: 3em;
+  letter-spacing: 2px;
+  font-family: "Pacifico", cursive;
+  text-shadow: 2px 2px 12px rgba(255, 105, 180, 0.5);
 }
 
 .container {
@@ -20,6 +24,8 @@ h1 {
   justify-content: center;
   align-items: flex-start;
   margin-top: 20px;
+  width: 100%;
+  max-width: 1200px;
 }
 
 .left-panel {
@@ -27,7 +33,9 @@ h1 {
 }
 
 canvas {
-  border: 3px solid #333;
+  border: 4px solid #333;
+  border-radius: 15px;
+  box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.2);
 }
 
 .right-panel {
@@ -37,37 +45,33 @@ canvas {
   max-width: 350px;
 }
 
-.info-box {
+.info-box,
+.cost-details,
+.final-cost {
   background-color: #fff;
   padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 15px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
   margin-bottom: 20px;
   width: 100%;
+  transition: transform 0.3s ease;
 }
 
-.info-box h2 {
+.info-box:hover,
+.cost-details:hover,
+.final-cost:hover {
+  transform: translateY(-5px);
+}
+
+.info-box h2,
+.cost-details h3,
+.final-cost h3 {
   color: #ff69b4;
-  margin-bottom: 15px;
 }
 
 .info-box p {
-  font-size: 1.2em;
+  font-size: 1.3em;
   margin: 10px 0;
-}
-
-.cost-details {
-  background-color: #fff;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
-  width: 100%;
-}
-
-.cost-details h3 {
-  color: #555;
-  margin-bottom: 10px;
 }
 
 .cost-details ul {
@@ -76,29 +80,81 @@ canvas {
 }
 
 .cost-details ul li {
-  font-size: 1.1em;
-  background-color: #f9f9f9;
-  padding: 10px;
-  margin-bottom: 8px;
-  border-radius: 4px;
-  border-left: 4px solid #ff69b4;
-}
-
-.final-cost {
-  background-color: #fff;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  width: 100%;
-}
-
-.final-cost h3 {
-  color: #555;
+  font-size: 1.2em;
+  background-color: #fef4f9;
+  padding: 12px;
   margin-bottom: 10px;
+  border-radius: 6px;
+  border-left: 5px solid #ff69b4;
 }
 
 .final-cost p {
-  font-size: 1.5em;
+  font-size: 1.7em;
   font-weight: bold;
-  color: #333;
+  color: #ff69b4;
+}
+
+.progress-container {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.progress-bar {
+  background-color: #eee;
+  border-radius: 20px;
+  width: 100%;
+  height: 30px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: #ff69b4;
+  width: 0;
+  border-radius: 20px;
+  transition: width 0.6s ease;
+}
+
+.buttons {
+  display: flex;
+  gap: 15px;
+}
+
+.btn {
+  background-color: #ff69b4;
+  border: none;
+  padding: 12px 25px;
+  color: #fff;
+  font-size: 1.3em;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.btn:hover {
+  background-color: #ff1493;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+#status {
+  font-size: 1.5em;
+  margin-top: 20px;
+  color: #ff69b4;
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.status-indicator {
+  font-weight: bold;
+  color: #444;
+  transition: color 0.3s ease;
+}
+
+.status-indicator.moving {
+  color: #ff69b4;
+}
+
+.status-indicator.paused {
+  color: #777;
 }

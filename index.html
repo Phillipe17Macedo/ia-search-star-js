@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mundo da Barbie - Algoritmo A*</title>
     <link rel="stylesheet" href="styles.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Pacifico&family=Roboto:wght@300;400;700&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
     <h1>Mundo da Barbie - Algoritmo A*</h1>
@@ -35,11 +39,20 @@
           <h3>Custo Total Final:</h3>
           <p id="finalCost">Aguardando finalização</p>
         </div>
-        <button id="startBtn">Começar</button>
-        <button id="pauseBtn">Pausar</button>
-        <button id="resetBtn">Reiniciar</button>
-
-        <p id="status">Status: Aguardando...</p>
+        <div class="progress-container">
+          <h3>Progresso</h3>
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+        </div>
+        <div class="buttons">
+          <button id="startBtn" class="btn">Começar</button>
+          <button id="pauseBtn" class="btn">Pausar</button>
+          <button id="resetBtn" class="btn">Reiniciar</button>
+        </div>
+        <p id="status">
+          Status: <span class="status-indicator">Aguardando...</span>
+        </p>
       </div>
     </div>
 
