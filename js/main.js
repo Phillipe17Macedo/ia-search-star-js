@@ -2,7 +2,7 @@ const canvas = document.getElementById("mapCanvas");
 const ctx = canvas.getContext("2d");
 const tileSize = 20;
 
-//icone Barbie
+// Ícone Barbie
 const barbieImg = document.getElementById("barbieImage");
 
 // Adicionar sons
@@ -15,6 +15,7 @@ const terrenoCusto = {
   2: 3, // Terra
   3: 10, // Paralelepípedo
   4: Infinity, // Edifícios (intransponível)
+  5: 2, // Outro tipo de terreno, se necessário
 };
 
 let gridState = []; // Variável para armazenar o estado original do grid (as cores)
@@ -90,8 +91,10 @@ class MinHeap {
   }
 }
 
+let timerId; // Variável global para controlar o timeout
+
 function sortearAmigosAceitos() {
-  let shuffledAmigos = amigos.sort(() => 0.5 - Math.random());
+  let shuffledAmigos = [...amigos].sort(() => 0.5 - Math.random());
   return shuffledAmigos.slice(0, 3);
 }
 
@@ -112,22 +115,22 @@ function drawMap(grid) {
       let color;
       switch (grid[y][x]) {
         case 0:
-          color = "#84B026";
+          color = "#84B026"; // Grama
           break;
         case 1:
-          color = "#9B9B9B";
+          color = "#9B9B9B"; // Asfalto
           break;
         case 2:
-          color = "#8C402E";
+          color = "#8C402E"; // Terra
           break;
         case 3:
-          color = "#DFEBF2";
+          color = "#DFEBF2"; // Paralelepípedo
           break;
         case 4:
-          color = "#F27C38";
+          color = "#FF0000"; // Edifícios (vermelho para destaque)
           break;
         case 5:
-          color = "#011640";
+          color = "#011640"; // Outro tipo de terreno, se necessário
           break;
       }
       ctx.fillStyle = color;
@@ -165,6 +168,7 @@ function astar(start, end, grid) {
   while (openList.size() > 0) {
     let currentNode = openList.extractMin();
 
+    // Verificar se chegou ao destino
     if (currentNode.x === end.x && currentNode.y === end.y) {
       let path = [];
       let temp = currentNode;
@@ -177,6 +181,7 @@ function astar(start, end, grid) {
 
     closedSet.add(`${currentNode.x}-${currentNode.y}`);
 
+    // Encontrar vizinhos (cima, baixo, esquerda, direita)
     let neighbors = [];
     if (currentNode.x + 1 < 42)
       neighbors.push(
@@ -216,19 +221,32 @@ function astar(start, end, grid) {
         terrenoCusto[neighbor.cost] === Infinity ||
         closedSet.has(`${neighbor.x}-${neighbor.y}`)
       ) {
+        // Log se tentar mover para um edifício
+        if (terrenoCusto[neighbor.cost] === Infinity) {
+          console.log(
+            `Tentativa de mover para edifício em (${neighbor.x}, ${neighbor.y}) - Movimento bloqueado`
+          );
+        }
         continue;
       }
 
-      neighbor.g = currentNode.g + terrenoCusto[neighbor.cost];
-      neighbor.h = Math.abs(neighbor.x - end.x) + Math.abs(neighbor.y - end.y);
-      neighbor.f = neighbor.g + neighbor.h;
-
+      // Calcula o custo g para o vizinho
+      let tentativeG = currentNode.g + terrenoCusto[neighbor.cost];
       if (
-        ![...openList.heap].some(
-          (n) => n.x === neighbor.x && n.y === neighbor.y
-        )
+        tentativeG < neighbor.g ||
+        !openList.heap.some((n) => n.x === neighbor.x && n.y === neighbor.y)
       ) {
+        neighbor.g = tentativeG;
+        neighbor.h =
+          Math.abs(neighbor.x - end.x) + Math.abs(neighbor.y - end.y);
+        neighbor.f = neighbor.g + neighbor.h;
         neighbor.parent = currentNode;
+
+        // Log do custo acumulado
+        console.log(
+          `Movendo para (${neighbor.x}, ${neighbor.y}) - Custo acumulado: ${neighbor.g}`
+        );
+
         openList.insert(neighbor);
       }
     }
@@ -246,7 +264,7 @@ function animatePath(path, delay = 200, amigo = null, returning = false) {
     if (index < path.length) {
       let node = path[index];
 
-      totalCost += node.cost;
+      totalCost += terrenoCusto[node.cost]; // Corrigido para adicionar o custo do terreno
 
       if (returning) {
         ctx.fillStyle = gridState[node.y][node.x];
@@ -269,8 +287,9 @@ function animatePath(path, delay = 200, amigo = null, returning = false) {
 
       index++;
 
-      setTimeout(drawStep, delay);
+      timerId = setTimeout(drawStep, delay); // Armazenar o ID do timeout
     } else {
+      timerId = null; // Resetar o timerId quando a animação terminar
       if (amigo) {
         const listItem = document.createElement("li");
         listItem.textContent = `${amigo.nome}: Custo ${totalCost}`;
@@ -289,15 +308,47 @@ function tentarConvencerAmigo(amigo) {
   return Math.random() > 0.5;
 }
 
+document.getElementById("startBtn").addEventListener("click", () => {
+  // Iniciar a movimentação se não estiver em andamento
+  if (!timerId) {
+    visitarAmigos();
+  }
+});
+
+document.getElementById("pauseBtn").addEventListener("click", () => {
+  // Pausar a movimentação limpando o timeout
+  clearTimeout(timerId);
+  timerId = null;
+  console.log("Movimentação pausada");
+});
+
+document.getElementById("resetBtn").addEventListener("click", () => {
+  // Reiniciar o jogo recarregando a página
+  location.reload();
+});
+
 loadGridFromFile("js/map.txt")
   .then((grid) => {
     console.log("Mapa carregado com sucesso");
     drawMap(grid);
 
-    let startNode = new Node(18, 22, grid[18][22]); // Casa da Barbie (ponto inicial)
+    let startNode = new Node(18, 22, grid[22][18]); // Casa da Barbie (ponto inicial)
 
-    // Determinar a ordem dos amigos usando uma heurística mais rápida
-    let ordemOtima = calcularOrdemHeuristica(amigos, startNode);
+    // Sortear os 3 amigos que aceitarão
+    let amigosAceitos = sortearAmigosAceitos();
+    console.log("Amigos Aceitos:", amigosAceitos.map((a) => a.nome).join(", "));
+
+    // Exibir os amigos sorteados na interface
+    document.getElementById("amigosSorteados").textContent = amigosAceitos
+      .map((a) => a.nome)
+      .join(", ");
+
+    // Determinar a ordem dos amigos usando a heurística de vizinho mais próximo
+    let ordemOtima = calcularOrdemHeuristica(amigosAceitos, startNode);
+    console.log(
+      "Ordem Ótima de Visita:",
+      ordemOtima.map((a) => a.nome).join(", ")
+    );
 
     let amigosEncontrados = [];
 
@@ -315,15 +366,20 @@ loadGridFromFile("js/map.txt")
         animatePath(path, 100, amigo); // Reduzindo o delay para 100ms
 
         setTimeout(() => {
-          amigosEncontrados.push(amigo.nome);
-          document.getElementById("amigosEncontrados").textContent =
-            amigosEncontrados.join(", ");
+          if (tentarConvencerAmigo(amigo)) {
+            amigosEncontrados.push(amigo.nome);
+            document.getElementById("amigosEncontrados").textContent =
+              amigosEncontrados.join(", ");
+            console.log(`Convencido: ${amigo.nome}`);
+          } else {
+            console.log(`Recusado: ${amigo.nome}`);
+          }
 
-          startNode = endNode;
+          startNode = endNode; // Atualiza a posição da Barbie para o amigo atual
           visitarAmigos(i + 1);
         }, path.length * 100); // Ajustado para garantir que a Barbie chegue ao amigo antes de continuar
       } else {
-        let returnHome = new Node(18, 22, grid[18][22]);
+        let returnHome = new Node(18, 22, grid[22][18]);
         let path = astar(startNode, returnHome, grid);
 
         if (path.length === 0) {
@@ -336,7 +392,8 @@ loadGridFromFile("js/map.txt")
           const finalCost = document.getElementById("finalCost");
           finalCost.textContent =
             document.getElementById("custoTotal").textContent;
-        }, path.length * 100);
+          console.log("Retornou para casa");
+        }, path.length * 200);
       }
     }
 
@@ -346,6 +403,7 @@ loadGridFromFile("js/map.txt")
     console.error("Erro ao carregar o mapa:", error);
   });
 
+// Função para calcular a ordem otimizada usando vizinho mais próximo
 function calcularOrdemHeuristica(amigos, startNode) {
   let ordem = [];
   let naoVisitados = [...amigos];
@@ -356,7 +414,7 @@ function calcularOrdemHeuristica(amigos, startNode) {
     let proximoAmigo = null;
     let proximoIndex = -1;
 
-    // Calcular a distância de cada amigo não visitado usando a distância Manhattan
+    // Encontrar o amigo mais próximo usando distância de Manhattan
     naoVisitados.forEach((amigo, index) => {
       let distancia = Math.abs(amigo.x - atual.x) + Math.abs(amigo.y - atual.y);
       if (distancia < menorDistancia) {
@@ -368,10 +426,10 @@ function calcularOrdemHeuristica(amigos, startNode) {
 
     if (proximoAmigo) {
       ordem.push(proximoAmigo);
-      naoVisitados.splice(proximoIndex, 1);
-      atual = new Node(proximoAmigo.x, proximoAmigo.y, 0);
+      naoVisitados.splice(proximoIndex, 1); // Remove o amigo da lista de não visitados
+      atual = new Node(proximoAmigo.x, proximoAmigo.y, 0); // Atualiza a posição atual
     }
   }
 
-  return ordem;
+  return ordem; // Retorna a ordem dos amigos na sequência otimizada de visitação
 }
