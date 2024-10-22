@@ -109,29 +109,40 @@ function loadGridFromFile(file) {
     });
 }
 
+function isAmigoPosition(x, y) {
+  // Função auxiliar para verificar se a posição [x, y] corresponde à posição de algum amigo
+  return amigos.some((amigo) => amigo.x === x && amigo.y === y);
+}
+
 function drawMap(grid) {
   for (let y = 0; y < grid.length; y++) {
     for (let x = 0; x < grid[y].length; x++) {
       let color;
-      switch (grid[y][x]) {
-        case 0:
-          color = "#84B026"; // Grama
-          break;
-        case 1:
-          color = "#9B9B9B"; // Asfalto
-          break;
-        case 2:
-          color = "#8C402E"; // Terra
-          break;
-        case 3:
-          color = "#DFEBF2"; // Paralelepípedo
-          break;
-        case 4:
-          color = "#F26938"; // Edifícios (vermelho para destaque)
-          break;
-        case 5:
-          color = "#011640"; // Outro tipo de terreno, se necessário
-          break;
+      if (isAmigoPosition(x, y)) {
+        // Se a posição atual corresponde à de um amigo, usa a cor especial #011640
+        color = "#F22";
+      } else {
+        // Caso contrário, usa a cor do terreno
+        switch (grid[y][x]) {
+          case 0:
+            color = "#84B026"; // Grama
+            break;
+          case 1:
+            color = "#9B9B9B"; // Asfalto
+            break;
+          case 2:
+            color = "#8C402E"; // Terra
+            break;
+          case 3:
+            color = "#DFEBF2"; // Paralelepípedo
+            break;
+          case 4:
+            color = "#F26938"; // Edifícios (vermelho para destaque)
+            break;
+          case 5:
+            color = "#011640"; // Outro tipo de terreno
+            break;
+        }
       }
       ctx.fillStyle = color;
       ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
