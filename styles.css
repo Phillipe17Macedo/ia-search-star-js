@@ -1,4 +1,4 @@
-/* Fontes aprimoradas */
+/* Estilo geral */
 body {
   font-family: "Roboto", sans-serif;
   background: linear-gradient(135deg, #fdf2f8, #ffe4e1);
@@ -7,7 +7,6 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  overflow-x: hidden;
 }
 
 h1 {
@@ -19,59 +18,78 @@ h1 {
   text-shadow: 2px 2px 12px rgba(255, 105, 180, 0.5);
 }
 
+/* Layout flexível */
 .container {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: flex-start;
+  width: 90%;
+  max-width: 1400px;
   margin-top: 20px;
-  width: 100%;
-  max-width: 1200px;
 }
 
-.left-panel {
-  margin-right: 40px;
+/* Painéis laterais */
+.side-panel {
+  width: 18%; /* Deixa as laterais mais compactas */
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* Espaçamento entre os elementos */
+}
+
+.left-side {
+  align-items: flex-end; /* Alinha à direita no painel esquerdo */
+}
+
+.right-panel {
+  align-items: flex-start; /* Alinha à esquerda no painel direito */
+}
+
+/* Painel central para o mapa */
+.center-panel {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 60%; /* Espaço maior para o mapa */
 }
 
 canvas {
   border: 4px solid #333;
-  border-radius: 15px;
+  border-radius: 20px;
   box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.2);
 }
 
-.right-panel {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  max-width: 350px;
-}
-
-.info-box,
+/* Caixa de informações e layout */
+.timer-box,
 .cost-details,
+.info-box,
 .final-cost {
   background-color: #fff;
   padding: 20px;
   border-radius: 15px;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
-  width: 100%;
   transition: transform 0.3s ease;
+  width: 100%;
 }
 
-.info-box:hover,
+.timer-box:hover,
 .cost-details:hover,
+.info-box:hover,
 .final-cost:hover {
   transform: translateY(-5px);
 }
 
-.info-box h2,
+.timer-box h3,
 .cost-details h3,
-.final-cost h3 {
+.final-cost h3,
+.info-box h2 {
   color: #ff69b4;
 }
 
-.info-box p {
-  font-size: 1.3em;
-  margin: 10px 0;
+.timer-box p,
+.final-cost p {
+  font-size: 1.7em;
+  font-weight: bold;
+  color: #ff69b4;
 }
 
 .cost-details ul {
@@ -88,34 +106,7 @@ canvas {
   border-left: 5px solid #ff69b4;
 }
 
-.final-cost p {
-  font-size: 1.7em;
-  font-weight: bold;
-  color: #ff69b4;
-}
-
-.progress-container {
-  width: 100%;
-  margin-bottom: 20px;
-}
-
-.progress-bar {
-  background-color: #eee;
-  border-radius: 20px;
-  width: 100%;
-  height: 30px;
-  margin-top: 10px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background-color: #ff69b4;
-  width: 0;
-  border-radius: 20px;
-  transition: width 0.6s ease;
-}
-
+/* Botões */
 .buttons {
   display: flex;
   gap: 15px;
@@ -138,6 +129,7 @@ canvas {
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
 
+/* Status */
 #status {
   font-size: 1.5em;
   margin-top: 20px;
@@ -157,4 +149,26 @@ canvas {
 
 .status-indicator.paused {
   color: #777;
+}
+
+/* Responsividade */
+@media (max-width: 1200px) {
+  .container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .side-panel,
+  .center-panel {
+    width: 100%;
+  }
+
+  .buttons {
+    justify-content: center;
+  }
+
+  .btn {
+    width: 100%;
+    margin: 10px 0;
+  }
 }

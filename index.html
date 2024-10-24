@@ -7,16 +7,29 @@
     <link rel="stylesheet" href="styles.css" />
     <link
       href="https://fonts.googleapis.com/css2?family=Pacifico&family=Roboto:wght@300;400;700&display=swap"
-      rel="stylesheet"
     />
   </head>
   <body>
     <h1>Mundo da Barbie - Algoritmo A*</h1>
     <div class="container">
-      <div class="left-panel">
+      <div class="side-panel left-side">
+        <div class="timer-box">
+          <h3>Tempo Total:</h3>
+          <p id="timerDisplay">00:00</p>
+        </div>
+        <div class="cost-details">
+          <h3>Custos Detalhados</h3>
+          <ul id="costList">
+            <li>Nenhum custo registrado ainda</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="center-panel">
         <canvas id="mapCanvas" width="840" height="840"></canvas>
       </div>
-      <div class="right-panel">
+
+      <div class="side-panel right-panel">
         <div class="info-box">
           <h2>Estatísticas da Partida</h2>
           <p>Custo total acumulado: <span id="custoTotal">0</span></p>
@@ -29,30 +42,14 @@
             <span id="amigosEncontrados">Nenhum encontrado ainda</span>
           </p>
         </div>
-        <div class="cost-details">
-          <h3>Custos Detalhados</h3>
-          <ul id="costList">
-            <li>Nenhum custo registrado ainda</li>
-          </ul>
-        </div>
         <div class="final-cost">
           <h3>Custo Total Final:</h3>
           <p id="finalCost">Aguardando finalização</p>
         </div>
-        <div class="progress-container">
-          <h3>Progresso</h3>
-          <div class="progress-bar">
-            <div class="progress-fill" id="progressFill"></div>
-          </div>
-        </div>
         <div class="buttons">
           <button id="startBtn" class="btn">Começar</button>
-          <button id="pauseBtn" class="btn">Pausar</button>
           <button id="resetBtn" class="btn">Reiniciar</button>
         </div>
-        <p id="status">
-          Status: <span class="status-indicator">Aguardando...</span>
-        </p>
       </div>
     </div>
 
