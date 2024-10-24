@@ -2,6 +2,45 @@ const canvas = document.getElementById("mapCanvas");
 const ctx = canvas.getContext("2d");
 const tileSize = 20;
 
+let grid; // Variável global para armazenar o grid carregado
+let amigosAceitos = []; // Armazenar os amigos que aceitarão o convite
+let startNode; // Posição inicial da Barbie
+let startTime, timerInterval;
+let timerStarted = false; // Controle para garantir que o timer só comece uma vez
+let totalStepsCompleted = 0; // Passos completados durante toda a partida
+let totalStepsGoal = 0; // Total de passos a serem percorridos durante toda a partida
+let custoTotalFinal = 0; // Variável para acumular o custo total final
+
+function formatTime(ms) {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
+    2,
+    "0"
+  )}`;
+}
+
+function startTimer() {
+  if (!timerStarted) {
+    // Iniciar o timer apenas se ele não tiver sido iniciado ainda
+    startTime = Date.now();
+    timerInterval = setInterval(() => {
+      const elapsedTime = Date.now() - startTime;
+      document.getElementById("timerDisplay").textContent =
+        formatTime(elapsedTime);
+    }, 1000); // Atualiza a cada segundo
+    timerStarted = true; // Marcar que o timer foi iniciado
+  }
+}
+
+function stopTimer() {
+  clearInterval(timerInterval);
+  const finalTime = Date.now() - startTime;
+  document.getElementById("timerDisplay").textContent = formatTime(finalTime);
+  timerStarted = false; // Resetar o controle do timer para a próxima partida
+}
+
 // Ícone Barbie
 const barbieImg = document.getElementById("barbieImage");
 
@@ -270,6 +309,12 @@ function animatePath(path, delay = 200, amigo = null, returning = false) {
   let totalCost = 0;
   let index = 0;
   const costList = document.getElementById("costList");
+  const totalSteps = path.length; // Total de etapas no caminho
+
+  // Iniciar o timer apenas no primeiro movimento
+  if (!timerStarted) {
+    startTimer(); // Iniciar o timer quando o primeiro movimento acontecer
+  }
 
   function drawStep() {
     if (index < path.length) {
@@ -306,8 +351,18 @@ function animatePath(path, delay = 200, amigo = null, returning = false) {
         listItem.textContent = `${amigo.nome}: Custo ${totalCost}`;
         costList.appendChild(listItem);
         encontrarAmigoSound.play();
+
+        // Acumular o custo desse percurso no custo final total
+        custoTotalFinal += totalCost;
       } else if (returning) {
         voltarParaCasaSound.play();
+        stopTimer();
+
+        // Somar o custo da volta para casa ao custo final total
+        custoTotalFinal += totalCost;
+
+        // Atualizar o custo final na interface
+        document.getElementById("finalCost").textContent = custoTotalFinal;
       }
     }
   }
@@ -319,17 +374,20 @@ function tentarConvencerAmigo(amigo) {
   return Math.random() > 0.5;
 }
 
+// Função para começar o jogo
 document.getElementById("startBtn").addEventListener("click", () => {
-  // Iniciar a movimentação se não estiver em andamento
-  if (!timerId) {
-    visitarAmigos(new Node(18, 22, grid[22][18]), amigos);
-  }
-});
+  // Verificar se o mapa foi carregado corretamente e os amigos foram sorteados
+  if (grid && startNode && amigosAceitos.length > 0) {
+    startTimer(); // Iniciar o timer
+    visitarAmigos(startNode, amigosAceitos); // Iniciar a movimentação da Barbie
 
-document.getElementById("startBtn").addEventListener("click", () => {
-  // Iniciar a movimentação se não estiver em andamento
-  if (!timerId) {
-    visitarAmigos(new Node(18, 22, grid[22][18]), amigos); // Chamada com o ponto inicial correto
+    // Reiniciar a barra de progresso ao iniciar o jogo
+    atualizarBarraDeProgresso(0);
+  } else {
+    alert(
+      "O mapa ainda não está pronto ou os amigos ainda não foram sorteados."
+    );
+    console.error("O jogo ainda não está pronto para começar.");
   }
 });
 
@@ -337,6 +395,39 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   // Reiniciar o jogo recarregando a página
   location.reload();
 });
+
+// Inicializar o jogo ao carregar a página, mas não iniciar a movimentação
+inicializarJogo();
+
+// Função para carregar o grid e inicializar a configuração do jogo
+function inicializarJogo() {
+  loadGridFromFile("js/map.txt")
+    .then((loadedGrid) => {
+      console.log("Mapa carregado com sucesso");
+      grid = loadedGrid; // Armazenar o grid carregado
+      drawMap(grid);
+
+      startNode = new Node(18, 22, grid[22][18]); // Casa da Barbie (ponto inicial)
+
+      // Sortear os 3 amigos que aceitarão
+      amigosAceitos = sortearAmigosAceitos();
+      console.log(
+        "Amigos Aceitos: ",
+        amigosAceitos.map((a) => a.nome).join(", ")
+      );
+
+      // Exibir os amigos sorteados na interface
+      document.getElementById("amigosSorteados").textContent = amigosAceitos
+        .map((a) => a.nome)
+        .join(", ");
+
+      // Agora o jogo está pronto, mas a movimentação só vai começar quando o botão for clicado
+      visitarAmigos(startNode, amigosAceitos);
+    })
+    .catch((error) => {
+      console.error("Erro ao carregar o mapa:", error);
+    });
+}
 
 loadGridFromFile("js/map.txt")
   .then((grid) => {
@@ -376,6 +467,7 @@ loadGridFromFile("js/map.txt")
           const finalCost = document.getElementById("finalCost");
           finalCost.textContent =
             document.getElementById("custoTotal").textContent;
+          stopTimer();
           console.log("Retornou para casa");
         }, path.length * 200);
       } else if (amigosNaoVisitados.length > 0) {
