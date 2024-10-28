@@ -1,16 +1,19 @@
+// Obtendo o canvas onde o mapa do jogo será desenhado e definindo o contexto 2D
 const canvas = document.getElementById("mapCanvas");
 const ctx = canvas.getContext("2d");
-const tileSize = 20;
+const tileSize = 20; // Tamanho de cada bloco no grid do mapa
 
-let grid; // Variável global para armazenar o grid carregado
-let amigosAceitos = []; // Armazenar os amigos que aceitarão o convite
+// Variáveis globais para armazenar informações do jogo
+let grid; // Grid do mapa
+let amigosAceitos = []; // Lista de amigos que aceitarão o convite
 let startNode; // Posição inicial da Barbie
-let startTime, timerInterval;
+let startTime, timerInterval; // Controle do timer
 let timerStarted = false; // Controle para garantir que o timer só comece uma vez
-let totalStepsCompleted = 0; // Passos completados durante toda a partida
-let totalStepsGoal = 0; // Total de passos a serem percorridos durante toda a partida
-let custoTotalFinal = 0; // Variável para acumular o custo total final
+let totalStepsCompleted = 0; // Contador de passos realizados
+let totalStepsGoal = 0; // Total de passos a serem percorridos durante a partida
+let custoTotalFinal = 0; // Acumulador para o custo total final da jornada
 
+// Função para formatar o tempo decorrido em minutos e segundos
 function formatTime(ms) {
   const totalSeconds = Math.floor(ms / 1000);
   const minutes = Math.floor(totalSeconds / 60);
@@ -21,33 +24,36 @@ function formatTime(ms) {
   )}`;
 }
 
+// Função para iniciar o cronômetro
 function startTimer() {
   if (!timerStarted) {
-    // Iniciar o timer apenas se ele não tiver sido iniciado ainda
+    // Iniciar o cronômetro apenas se ele ainda não tiver sido iniciado
     startTime = Date.now();
     timerInterval = setInterval(() => {
       const elapsedTime = Date.now() - startTime;
       document.getElementById("timerDisplay").textContent =
         formatTime(elapsedTime);
-    }, 1000); // Atualiza a cada segundo
-    timerStarted = true; // Marcar que o timer foi iniciado
+    }, 1000); // Atualiza o cronômetro a cada segundo
+    timerStarted = true; // Marcar que o cronômetro foi iniciado
   }
 }
 
+// Função para parar o cronômetro
 function stopTimer() {
   clearInterval(timerInterval);
   const finalTime = Date.now() - startTime;
   document.getElementById("timerDisplay").textContent = formatTime(finalTime);
-  timerStarted = false; // Resetar o controle do timer para a próxima partida
+  timerStarted = false; // Resetar o controle do cronômetro para a próxima partida
 }
 
-// Ícone Barbie
+// Referência ao ícone da Barbie
 const barbieImg = document.getElementById("barbieImage");
 
-// Adicionar sons
+// Sons para eventos do jogo
 const encontrarAmigoSound = document.getElementById("encontrarAmigoSound");
 const voltarParaCasaSound = document.getElementById("voltarParaCasaSound");
 
+// Definindo os custos dos tipos de terreno no mapa
 const terrenoCusto = {
   0: 5, // Grama
   1: 1, // Asfalto
@@ -59,7 +65,7 @@ const terrenoCusto = {
 
 let gridState = []; // Variável para armazenar o estado original do grid (as cores)
 
-// Localização dos amigos (corrigido)
+// Localização dos amigos no mapa
 const amigos = [
   { x: 12, y: 4, nome: "Amigo 1" },
   { x: 8, y: 9, nome: "Amigo 2" },
@@ -69,16 +75,19 @@ const amigos = [
   { x: 36, y: 36, nome: "Amigo 6" },
 ];
 
+// Classe para a implementação de uma fila de prioridades (MinHeap), usada pelo algoritmo A*
 class MinHeap {
   constructor() {
     this.heap = [];
   }
 
+  // Inserir um nó na heap
   insert(node) {
     this.heap.push(node);
     this.bubbleUp();
   }
 
+  // Organizar a heap de forma que o menor valor fique no topo
   bubbleUp() {
     let index = this.heap.length - 1;
     while (index > 0) {
@@ -92,6 +101,7 @@ class MinHeap {
     }
   }
 
+  // Remover e retornar o menor elemento da heap
   extractMin() {
     if (this.heap.length === 1) return this.heap.pop();
     const min = this.heap[0];
@@ -100,6 +110,7 @@ class MinHeap {
     return min;
   }
 
+  // Reorganizar a heap após a remoção do elemento do topo
   bubbleDown(index) {
     let smallest = index;
     const left = 2 * index + 1;
@@ -125,6 +136,7 @@ class MinHeap {
     }
   }
 
+  // Retornar o tamanho da heap
   size() {
     return this.heap.length;
   }
@@ -132,11 +144,13 @@ class MinHeap {
 
 let timerId; // Variável global para controlar o timeout
 
+// Função para sortear 3 amigos que aceitarão o convite
 function sortearAmigosAceitos() {
   let shuffledAmigos = [...amigos].sort(() => 0.5 - Math.random());
   return shuffledAmigos.slice(0, 3);
 }
 
+// Carregar o grid do arquivo do mapa
 function loadGridFromFile(file) {
   return fetch(file)
     .then((response) => response.text())
@@ -148,20 +162,21 @@ function loadGridFromFile(file) {
     });
 }
 
+// Verificar se a posição corresponde à de um amigo
 function isAmigoPosition(x, y) {
-  // Função auxiliar para verificar se a posição [x, y] corresponde à posição de algum amigo
   return amigos.some((amigo) => amigo.x === x && amigo.y === y);
 }
 
+// Função para desenhar o mapa no canvas
 function drawMap(grid) {
   for (let y = 0; y < grid.length; y++) {
     for (let x = 0; x < grid[y].length; x++) {
       let color;
       if (isAmigoPosition(x, y)) {
-        // Se a posição atual corresponde à de um amigo, usa a cor especial #011640
-        color = "#F22";
+        // Se a posição atual corresponde à de um amigo, usa uma cor especial
+        color = "#011640";
       } else {
-        // Caso contrário, usa a cor do terreno
+        // Caso contrário, usa a cor do terreno correspondente
         switch (grid[y][x]) {
           case 0:
             color = "#84B026"; // Grama
@@ -176,10 +191,10 @@ function drawMap(grid) {
             color = "#DFEBF2"; // Paralelepípedo
             break;
           case 4:
-            color = "#F26938"; // Edifícios (vermelho para destaque)
+            color = "#F26938"; // Edifícios (intransponível)
             break;
           case 5:
-            color = "#011640"; // Outro tipo de terreno
+            color = "#F22222"; // Outro tipo de terreno
             break;
         }
       }
@@ -197,28 +212,30 @@ function drawMap(grid) {
   }
 }
 
+// Classe que representa um nó no mapa, usado pelo algoritmo A*
 class Node {
   constructor(x, y, cost, parent = null) {
     this.x = x;
     this.y = y;
     this.cost = cost;
     this.parent = parent;
-    this.g = 0;
-    this.h = 0;
-    this.f = 0;
+    this.g = 0; // Custo do início até este nó
+    this.h = 0; // Heurística (estimativa de custo até o destino)
+    this.f = 0; // Custo total (g + h)
   }
 }
 
+// Implementação do algoritmo A* para encontrar o menor caminho
 function astar(start, end, grid) {
-  let openList = new MinHeap();
-  let closedSet = new Set();
+  let openList = new MinHeap(); // Lista de nós a serem explorados
+  let closedSet = new Set(); // Conjunto de nós já explorados
 
   openList.insert(start);
 
   while (openList.size() > 0) {
-    let currentNode = openList.extractMin();
+    let currentNode = openList.extractMin(); // Extrair o nó com menor custo total (f)
 
-    // Verificar se chegou ao destino
+    // Verificar se o destino foi alcançado
     if (currentNode.x === end.x && currentNode.y === end.y) {
       let path = [];
       let temp = currentNode;
@@ -226,12 +243,12 @@ function astar(start, end, grid) {
         path.push(temp);
         temp = temp.parent;
       }
-      return path.reverse();
+      return path.reverse(); // Retornar o caminho do início ao fim
     }
 
-    closedSet.add(`${currentNode.x}-${currentNode.y}`);
+    closedSet.add(`${currentNode.x}-${currentNode.y}`); // Marcar o nó como explorado
 
-    // Encontrar vizinhos (cima, baixo, esquerda, direita)
+    // Encontrar os vizinhos (cima, baixo, esquerda, direita)
     let neighbors = [];
     if (currentNode.x + 1 < 42)
       neighbors.push(
@@ -271,7 +288,7 @@ function astar(start, end, grid) {
         terrenoCusto[neighbor.cost] === Infinity ||
         closedSet.has(`${neighbor.x}-${neighbor.y}`)
       ) {
-        // Log se tentar mover para um edifício
+        // Se o vizinho for um edifício ou já tiver sido explorado, ignorar
         if (terrenoCusto[neighbor.cost] === Infinity) {
           console.log(
             `Tentativa de mover para edifício em (${neighbor.x}, ${neighbor.y}) - Movimento bloqueado`
@@ -280,7 +297,7 @@ function astar(start, end, grid) {
         continue;
       }
 
-      // Calcula o custo g para o vizinho
+      // Calcular o custo acumulado até o vizinho
       let tentativeG = currentNode.g + terrenoCusto[neighbor.cost];
       if (
         tentativeG < neighbor.g ||
@@ -288,44 +305,44 @@ function astar(start, end, grid) {
       ) {
         neighbor.g = tentativeG;
         neighbor.h =
-          Math.abs(neighbor.x - end.x) + Math.abs(neighbor.y - end.y);
+          Math.abs(neighbor.x - end.x) + Math.abs(neighbor.y - end.y); // Heurística (distância Manhattan)
         neighbor.f = neighbor.g + neighbor.h;
         neighbor.parent = currentNode;
 
-        // Log do custo acumulado
+        // Inserir o vizinho na lista de exploração
         console.log(
           `Movendo para (${neighbor.x}, ${neighbor.y}) - Custo acumulado: ${neighbor.g}`
         );
-
         openList.insert(neighbor);
       }
     }
   }
 
-  return []; // Nenhum caminho encontrado
+  return []; // Retornar um caminho vazio se não houver solução
 }
 
+// Função para animar o caminho percorrido pela Barbie
 function animatePath(path, delay = 200, amigo = null, returning = false) {
   let totalCost = 0;
   let index = 0;
   const costList = document.getElementById("costList");
   const totalSteps = path.length; // Total de etapas no caminho
 
-  // Iniciar o timer apenas no primeiro movimento
+  // Iniciar o cronômetro apenas no primeiro movimento
   if (!timerStarted) {
-    startTimer(); // Iniciar o timer quando o primeiro movimento acontecer
+    startTimer(); // Iniciar o cronômetro quando o primeiro movimento acontecer
   }
 
   function drawStep() {
     if (index < path.length) {
       let node = path[index];
 
-      totalCost += terrenoCusto[node.cost]; // Corrigido para adicionar o custo do terreno
+      totalCost += terrenoCusto[node.cost]; // Atualizar o custo total do caminho
 
       if (returning) {
-        ctx.fillStyle = gridState[node.y][node.x];
+        ctx.fillStyle = gridState[node.y][node.x]; // Restaurar a cor original ao voltar para casa
       } else {
-        ctx.fillStyle = "lightpink";
+        ctx.fillStyle = "lightpink"; // Cor da trilha da Barbie ao visitar amigos
       }
 
       ctx.fillRect(node.x * tileSize, node.y * tileSize, tileSize, tileSize);
@@ -337,25 +354,24 @@ function animatePath(path, delay = 200, amigo = null, returning = false) {
         node.y * tileSize,
         tileSize,
         tileSize
-      );
+      ); // Desenhar a Barbie na nova posição
 
-      document.getElementById("custoTotal").textContent = totalCost;
+      document.getElementById("custoTotal").textContent = totalCost; // Atualizar o custo total na interface
 
       index++;
-
-      timerId = setTimeout(drawStep, delay); // Armazenar o ID do timeout
+      timerId = setTimeout(drawStep, delay); // Continuar a animação após o delay
     } else {
       timerId = null; // Resetar o timerId quando a animação terminar
       if (amigo) {
         const listItem = document.createElement("li");
         listItem.textContent = `${amigo.nome}: Custo ${totalCost}`;
         costList.appendChild(listItem);
-        encontrarAmigoSound.play();
+        encontrarAmigoSound.play(); // Tocar som ao encontrar um amigo
 
         // Acumular o custo desse percurso no custo final total
         custoTotalFinal += totalCost;
       } else if (returning) {
-        voltarParaCasaSound.play();
+        voltarParaCasaSound.play(); // Tocar som ao voltar para casa
         stopTimer();
 
         // Somar o custo da volta para casa ao custo final total
@@ -370,15 +386,16 @@ function animatePath(path, delay = 200, amigo = null, returning = false) {
   drawStep();
 }
 
+// Função para decidir se um amigo será convencido ou não
 function tentarConvencerAmigo(amigo) {
-  return Math.random() > 0.5;
+  return Math.random() > 0.5; // 50% de chance de convencer
 }
 
-// Função para começar o jogo
+// Evento para iniciar o jogo ao clicar no botão "Começar"
 document.getElementById("startBtn").addEventListener("click", () => {
   // Verificar se o mapa foi carregado corretamente e os amigos foram sorteados
   if (grid && startNode && amigosAceitos.length > 0) {
-    startTimer(); // Iniciar o timer
+    startTimer(); // Iniciar o cronômetro
     visitarAmigos(startNode, amigosAceitos); // Iniciar a movimentação da Barbie
 
     // Reiniciar a barra de progresso ao iniciar o jogo
@@ -391,23 +408,20 @@ document.getElementById("startBtn").addEventListener("click", () => {
   }
 });
 
+// Evento para reiniciar o jogo ao clicar no botão "Reiniciar"
 document.getElementById("resetBtn").addEventListener("click", () => {
-  // Reiniciar o jogo recarregando a página
-  location.reload();
+  location.reload(); // Recarregar a página para reiniciar o jogo
 });
 
-// Inicializar o jogo ao carregar a página, mas não iniciar a movimentação
-inicializarJogo();
-
-// Função para carregar o grid e inicializar a configuração do jogo
+// Função para inicializar o jogo ao carregar a página
 function inicializarJogo() {
   loadGridFromFile("js/map.txt")
     .then((loadedGrid) => {
       console.log("Mapa carregado com sucesso");
       grid = loadedGrid; // Armazenar o grid carregado
-      drawMap(grid);
+      drawMap(grid); // Desenhar o mapa no canvas
 
-      startNode = new Node(18, 22, grid[22][18]); // Casa da Barbie (ponto inicial)
+      startNode = new Node(18, 22, grid[22][18]); // Definir a casa da Barbie como ponto inicial
 
       // Sortear os 3 amigos que aceitarão
       amigosAceitos = sortearAmigosAceitos();
@@ -421,7 +435,7 @@ function inicializarJogo() {
         .map((a) => a.nome)
         .join(", ");
 
-      // Agora o jogo está pronto, mas a movimentação só vai começar quando o botão for clicado
+      // O jogo está pronto, mas a movimentação só começa quando o botão for clicado
       visitarAmigos(startNode, amigosAceitos);
     })
     .catch((error) => {
@@ -429,10 +443,14 @@ function inicializarJogo() {
     });
 }
 
+// Inicializar o jogo ao carregar a página
+inicializarJogo();
+
+// Carregar o grid do arquivo do mapa e iniciar a movimentação da Barbie
 loadGridFromFile("js/map.txt")
   .then((grid) => {
     console.log("Mapa carregado com sucesso");
-    drawMap(grid);
+    drawMap(grid); // Desenhar o mapa no canvas
 
     let startNode = new Node(18, 22, grid[22][18]); // Casa da Barbie (ponto inicial)
 
@@ -447,6 +465,7 @@ loadGridFromFile("js/map.txt")
 
     let amigosEncontrados = [];
 
+    // Função para visitar amigos
     function visitarAmigos(
       startNode,
       amigosNaoVisitados,
